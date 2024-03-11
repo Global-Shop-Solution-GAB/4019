@@ -1,0 +1,259 @@
+Program.Sub.ScreenSU.Start
+gui.Form1..create
+gui.Form1..caption("Positive Pay Selection")
+gui.Form1..size(4755,2220)
+gui.Form1..minx(0)
+gui.Form1..miny(0)
+gui.Form1..position(0,0)
+gui.Form1..event(unload,form1_unload)
+gui.Form1..alwaysontop(False)
+gui.Form1..fontname("Arial")
+gui.Form1..fontsize(8)
+gui.Form1..forecolor(0)
+gui.Form1..fontstyle(,,,,)
+gui.Form1..BackColor(-2147483633)
+gui.Form1..controlbox(True)
+gui.Form1..maxbutton(True)
+gui.Form1..minbutton(True)
+gui.Form1..mousepointer(0)
+gui.Form1..moveable(True)
+gui.Form1..sizeable(True)
+gui.Form1..ShowInTaskBar(True)
+gui.Form1..titlebar(True)
+gui.Form1.cmdOk.create(button)
+gui.Form1.cmdOk.caption("Ok")
+gui.Form1.cmdOk.visible(True)
+gui.Form1.cmdOk.size(1110,375)
+gui.Form1.cmdOk.zorder(0)
+gui.Form1.cmdOk.position(200,1090)
+gui.Form1.cmdOk.enabled(True)
+gui.Form1.cmdOk.fontname("Arial")
+gui.Form1.cmdOk.fontsize(8)
+gui.Form1.cmdOk.event(click,cmdok_click)
+gui.Form1.cmdOk.defaultvalue("")
+gui.Form1.cmdOk.controlgroup(0)
+gui.Form1.lblBegDate.create(label,"Beginning Date",True,1935,255,1,200,200,True,0,Arial,8,-2147483633,0)
+gui.Form1.lblBegDate.defaultvalue("")
+gui.Form1.lblBegDate.controlgroup(0)
+gui.Form1.lblEndDate.create(label,"Ending Date",True,1935,255,1,2400,190,True,0,Arial,8,-2147483633,0)
+gui.Form1.lblEndDate.defaultvalue("")
+gui.Form1.lblEndDate.controlgroup(0)
+gui.Form1.dtpBDate.create(datepicker)
+gui.Form1.dtpBDate.visible(True)
+gui.Form1.dtpBDate.size(1935,285)
+gui.Form1.dtpBDate.zorder(0)
+gui.Form1.dtpBDate.position(200,475)
+gui.Form1.dtpBDate.enabled(True)
+gui.Form1.dtpBDate.checkbox(False)
+gui.Form1.dtpBDate.defaultvalue("")
+gui.Form1.dtpBDate.controlgroup(0)
+gui.Form1.dtpEDate.create(datepicker)
+gui.Form1.dtpEDate.visible(True)
+gui.Form1.dtpEDate.size(1935,285)
+gui.Form1.dtpEDate.zorder(0)
+gui.Form1.dtpEDate.position(2400,460)
+gui.Form1.dtpEDate.enabled(True)
+gui.Form1.dtpEDate.checkbox(False)
+gui.Form1.dtpEDate.defaultvalue("")
+gui.Form1.dtpEDate.controlgroup(0)
+
+
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+
+Variable.UDT.Export.Define("CK_NO",Float,CK_NO)
+Variable.UDT.Export.Define("AMOUNT",Float,AMOUNT)
+Variable.UDT.Export.Define("CK_DATE",Date,CK_DATE)
+Variable.UDT.Export.Define("PAYEE",String,PAYEE)
+Variable.uGlobal.uExport.Declare("Export")
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+F.Intrinsic.Control.SetErrorHandler("Main_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+
+'Coded by: WAW
+'Date: 2/27/15
+'This is a positive pay for BNC (Bank of North Carolina) to write certain information from the CHECKS_LOG table to a .csv file
+
+'Displays the date selection form
+Gui.Form1..Show
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("Main_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_4019_Positive_Pay_BNC.gas",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End
+Function.Intrinsic.Control.EndIf
+
+
+Program.Sub.Main.End
+
+program.sub.form1_unload.start
+F.Intrinsic.Control.SetErrorHandler("form1_unload_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+
+'closes the program
+F.Intrinsic.Control.End
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("form1_unload_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_4019_Positive_Pay_BNC.gas",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End
+Function.Intrinsic.Control.EndIf
+
+
+program.sub.form1_unload.end
+
+program.sub.cmdok_click.start
+F.Intrinsic.Control.SetErrorHandler("cmdok_click_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+
+'open connection to the database
+F.ODBC.Connection!con.OpenConnection(V.Ambient.PDSN,V.Ambient.PUser,V.Ambient.PPass)
+
+V.uglobal.uexport.redim(-1,-1)
+
+'call the chklog and writerec subroutines
+F.Intrinsic.Control.CallSub(Chklog)
+F.Intrinsic.Control.callsub(Writerec)
+
+'closes the screen
+Gui.Form1..Visible(false)
+
+'closes the connection to the database and closes the form
+F.ODBC.Connection!con.Close
+F.Intrinsic.Control.CallSub(Form1_unload)
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("cmdok_click_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_4019_Positive_Pay_BNC.gas",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(Form1_unload)
+Function.Intrinsic.Control.EndIf
+
+
+program.sub.cmdok_click.end
+
+Program.Sub.ChkLog.Start
+F.Intrinsic.Control.SetErrorHandler("ChkLog_Err")
+F.Intrinsic.Control.ClearErrors
+
+'declaration of variables
+V.Local.sError.Declare(String)
+V.Local.ssql.Declare(String)
+V.Local.dbdate.Declare(Date)
+V.Local.dedate.Declare(Date)
+V.Local.i.Declare(Long)
+
+'set the begging and ending dates
+V.Local.dbdate.Set(V.Screen.Form1!dtpBDate.Value)
+V.Local.dedate.Set(V.Screen.Form1!dtpEDate.Value)
+
+'get and set check date, payee, amount of check and check number
+F.Intrinsic.String.Build("select CK_DATE, CK_NO, PAYEE, AMOUNT from V_CHECKS_LOG where CK_OR_VOID = 'C' and CK_DATE between '{0}' and '{1}'",V.Local.dbdate.PervasiveDate,V.Local.dedate.PervasiveDate,V.Local.ssql)
+F.ODBC.Connection!con.OpenRecordsetRO("rst",V.Local.ssql)
+F.Intrinsic.Control.DoUntil(V.ODBC.con!rst.EOF,=,"True")
+	F.Intrinsic.Control.If(V.uGlobal.uExport.UBound,=,-1)
+		V.uGlobal.uExport.Redim(0,0)
+		V.uGlobal.uExport!CK_DATE.Set(V.ODBC.con!rst.FieldValPervasiveDate!CK_DATE)
+		V.uGlobal.uExport!PAYEE.Set(V.ODBC.con!rst.FieldValTrim!PAYEE)
+		V.uGlobal.uExport!CK_NO.Set(V.ODBC.con!rst.FieldValTrim!CK_NO)
+		V.uGlobal.uExport!AMOUNT.Set(V.ODBC.con!rst.FieldValTrim!AMOUNT)
+	F.Intrinsic.Control.Else
+		V.Local.i.Set(V.uGlobal.uExport.UBound)
+		F.Intrinsic.Math.Add(V.Local.i,1,V.Local.i)
+		V.uGlobal.uExport.RedimPreserve(V.uGlobal.uExport.LBound,V.Local.i)
+		V.uGlobal.uExport(v.Local.i)!AMOUNT.Set(V.ODBC.con!rst.FieldValtrim!AMOUNT)
+		V.uGlobal.uExport(v.Local.i)!CK_DATE.Set(V.ODBC.con!rst.FieldValPervasiveDate!CK_DATE)
+		V.uGlobal.uExport(v.Local.i)!PAYEE.Set(V.ODBC.con!rst.FieldValTrim!PAYEE)
+		V.uGlobal.uExport(v.Local.i)!CK_NO.Set(V.ODBC.con!rst.FieldValTrim!CK_NO)
+	F.Intrinsic.Control.EndIf
+
+	'move on to the next record in the recordset
+	F.ODBC.con!rst.MoveNext
+F.intrinsic.Control.Loop
+F.Intrinsic.Debug.SetLA("Gathered checks from CHECKS_LOG")
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("ChkLog_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_4019_Positive_Pay_BNC.gas",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(Form1_unload)
+Function.Intrinsic.Control.EndIf
+
+
+Program.Sub.ChkLog.End
+
+Program.Sub.Writerec.Start
+F.Intrinsic.Control.SetErrorHandler("Writerec_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+V.Local.sfile.Declare(String)
+V.Local.sdir.Declare(String)
+V.Local.ihndl.Declare(Long)
+V.Local.i.Declare(Long)
+V.Local.slinedata.Declare(String)
+V.Local.sFileData.Declare(String)
+V.Local.sdate.Declare(String)
+V.Local.stime.Declare(String)
+
+'formats the ambient time and ambient date
+F.Intrinsic.String.Format(V.Ambient.Date,"MMDDYYYY",V.Local.sdate)
+F.Intrinsic.String.Format(V.Ambient.Time,"HHMM",V.Local.stime)
+
+'Builds function for how the file will be saved
+F.Intrinsic.String.Build("{0}\PosPay\BNC{1}-{2}.csv",V.Caller.filesdir,V.Local.sdate,V.Local.stime,V.Local.sfile)
+
+'Check the ubound of CK_NO to see if greater than -1
+F.Intrinsic.Control.If(V.uGlobal.uExport!CK_NO.UBound,>,-1)
+	F.Intrinsic.Control.for(V.Local.i,V.uGlobal.uExport!CK_NO.LBound,V.uGlobal.uExport!CK_NO.UBound,1)
+		F.Intrinsic.Control.If(V.Local.i,=,0)
+			F.Intrinsic.String.Build("{0}*!*{1}*!*{2}*!*{3}{4}",V.uGlobal.uExport(v.Local.i)!CK_DATE,V.uGlobal.uExport(v.Local.i)!PAYEE,V.uGlobal.uExport(v.Local.i)!AMOUNT,V.uGlobal.uExport(v.Local.i)!CK_NO,V.ambient.newline,V.Local.slinedata)
+		F.Intrinsic.Control.Else
+			F.Intrinsic.String.Build("{0}{1}*!*{2}*!*{3}*!*{4}{5}",V.Local.slinedata,V.uGlobal.uExport(v.Local.i)!CK_DATE,V.uGlobal.uExport(v.Local.i)!PAYEE,V.uGlobal.uExport(v.Local.i)!AMOUNT,V.uGlobal.uExport(v.Local.i)!CK_NO,V.ambient.newline,V.Local.slinedata)
+F.Intrinsic.Control.EndIf
+	F.intrinsic.control.next(V.local.i)
+F.Intrinsic.String.Build("{0}{1}{2}",V.Local.sFileData,V.Local.slinedata,V.Ambient.NewLine,V.Local.sFileData)
+	'if there is no data based on the selected range a message box will tell the user that
+F.Intrinsic.Control.Else
+	F.Intrinsic.UI.Msgbox("No data found for selected range.")
+	F.Intrinsic.Control.ExitSub
+F.intrinsic.control.endif
+
+F.Intrinsic.String.replace(V.Local.sFileData,","," ",V.Local.sFileData)
+F.Intrinsic.String.Replace(V.local.sfiledata,"*!*"," , ",V.Local.sfiledata)
+
+'write the string to a file
+F.Intrinsic.File.String2File(V.Local.sfile,V.Local.sFileData)
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("Writerec_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_4019_Positive_Pay_BNC.gas",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(Form1_unload)
+Function.Intrinsic.Control.EndIf
+
+
+Program.Sub.Writerec.End
+
+
